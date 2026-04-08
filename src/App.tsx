@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FC } from 'react';
 
 const properties = [
   {
@@ -106,19 +106,24 @@ const properties = [
   },
 ];
 
-const fmt = (n) => `₹${(n / 100000).toFixed(1)}L`;
-const fmtCr = (n) =>
+const fmt = (n: number): string => `₹${(n / 100000).toFixed(1)}L`;
+const fmtCr = (n: number): string =>
   n >= 10000000
     ? `₹${(n / 10000000).toFixed(2)} Cr`
     : `₹${(n / 100000).toFixed(0)}L`;
 
-const MiniChart = ({ data, color }) => {
+interface MiniChartProps {
+  data: number[];
+  color: string;
+}
+
+const MiniChart: FC<MiniChartProps> = ({ data, color }) => {
   const min = Math.min(...data);
   const max = Math.max(...data);
   const w = 120,
     h = 40;
   const pts = data
-    .map((v, i) => {
+    .map((v: number, i: number) => {
       const x = (i / (data.length - 1)) * w;
       const y = h - ((v - min) / (max - min)) * (h - 6) - 3;
       return `${x},${y}`;
@@ -144,8 +149,12 @@ const MiniChart = ({ data, color }) => {
   );
 };
 
-const RiskBadge = ({ level }) => {
-  const colors = { Low: '#00C896', Medium: '#FFB800', High: '#FF2D55' };
+interface RiskBadgeProps {
+  level: string;
+}
+
+const RiskBadge: FC<RiskBadgeProps> = ({ level }) => {
+  const colors: Record<string, string> = { Low: '#00C896', Medium: '#FFB800', High: '#FF2D55' };
   return (
     <span
       style={{
@@ -164,7 +173,13 @@ const RiskBadge = ({ level }) => {
   );
 };
 
-const ScoreArc = ({ score, max = 10, size = 80 }) => {
+interface ScoreArcProps {
+  score: number;
+  max?: number;
+  size?: number;
+}
+
+const ScoreArc: FC<ScoreArcProps> = ({ score, max = 10, size = 80 }) => {
   const pct = score / max;
   const r = size / 2 - 8;
   const circ = 2 * Math.PI * r;
@@ -232,7 +247,7 @@ export default function TruthEngine() {
   const gap = selected.advertised - selected.trueValue;
   const gapPct = ((gap / selected.advertised) * 100).toFixed(1);
   const totalHidden = Object.values(selected.hiddenCosts).reduce(
-    (a, b) => a + b,
+    (a: number, b: number) => a + b,
     0
   );
 
@@ -252,7 +267,7 @@ export default function TruthEngine() {
         .prop-card { background: #0f0f28; border: 1px solid #1e1e40; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; }
         .prop-card:hover { border-color: #3a3a6a; background: #12122e; }
         .prop-card.active { border-color: #5b5bf0; background: #13133a; }
-        .tab-btn { background: none; border: none; color: #666; font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: 1px; padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; text-transform: uppercase; transition: all 0.2s; }
+        .tab-btn { background: none; border: none; color: #666; font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: 1px; padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; }
         .tab-btn.active { color: #7c7cf8; border-color: #7c7cf8; }
         .metric-box { background: #0c0c22; border: 1px solid #1a1a3a; border-radius: 10px; padding: 16px; }
         .bar-bg { background: #1a1a3a; border-radius: 99px; height: 6px; overflow: hidden; }
@@ -347,7 +362,7 @@ export default function TruthEngine() {
               }}
             />
           </div>
-          <div style={{ display: 'flex', align: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span
               className="pulse"
               style={{
@@ -510,7 +525,7 @@ export default function TruthEngine() {
               'Satellite Imagery',
               'Municipal Records',
               '500+ Buyer Reviews',
-            ].map((s) => (
+            ].map((s: string) => (
               <div
                 key={s}
                 style={{
@@ -682,7 +697,7 @@ export default function TruthEngine() {
             }}
           >
             {['overview', 'builder', 'legal', 'financials', 'locality'].map(
-              (t) => (
+              (t: string) => (
                 <button
                   key={t}
                   className={`tab-btn ${tab === t ? 'active' : ''}`}
@@ -737,7 +752,7 @@ export default function TruthEngine() {
                       }}
                     >
                       {fmtCr(
-                        selected.similarSales.reduce((a, b) => a + b, 0) /
+                        selected.similarSales.reduce((a: number, b: number) => a + b, 0) /
                           selected.similarSales.length
                       )}
                     </div>
@@ -791,7 +806,7 @@ export default function TruthEngine() {
                         ? 'Medium'
                         : 'High',
                   },
-                ].map((r, i) => (
+                ].map((r: any, i: number) => (
                   <div
                     key={i}
                     style={{
@@ -837,8 +852,8 @@ export default function TruthEngine() {
                 >
                   HIDDEN COSTS BREAKDOWN
                 </div>
-                {Object.entries(selected.hiddenCosts).map(([k, v], i) => {
-                  const labels = {
+                {Object.entries(selected.hiddenCosts).map(([k, v]: [string, any], i: number) => {
+                  const labels: Record<string, string> = {
                     stampDuty: 'Stamp Duty',
                     gst: 'GST',
                     registration: 'Registration',
@@ -953,7 +968,7 @@ export default function TruthEngine() {
                 >
                   SIMILAR RECENT SALES
                 </div>
-                {selected.similarSales.map((s, i) => (
+                {selected.similarSales.map((s: number, i: number) => (
                   <div
                     key={i}
                     style={{
@@ -1300,7 +1315,7 @@ export default function TruthEngine() {
                     value: '6-8% p.a.',
                     color: '#c84bff',
                   },
-                ].map((r, i) => (
+                ].map((r: any, i: number) => (
                   <div
                     key={i}
                     style={{
@@ -1376,7 +1391,7 @@ export default function TruthEngine() {
                   status: selected.legalRisk === 'Low',
                   note: 'OC status pending (project under construction)',
                 },
-              ].map((item, i) => (
+              ].map((item: any, i: number) => (
                 <div
                   key={i}
                   style={{
@@ -1482,7 +1497,7 @@ export default function TruthEngine() {
                     score: selected.infraScore * 0.85 + 1.5,
                   },
                   { label: 'Hospital Access', score: selected.infraScore },
-                ].map((r, i) => (
+                ].map((r: any, i: number) => (
                   <div key={i} style={{ marginBottom: 10 }}>
                     <div
                       style={{
@@ -1501,7 +1516,7 @@ export default function TruthEngine() {
                           fontFamily: 'JetBrains Mono',
                         }}
                       >
-                        {Math.min(10, r.score.toFixed(1))}
+                        {Math.min(10, parseFloat(r.score.toFixed(1)))}
                       </span>
                     </div>
                     <div className="bar-bg">

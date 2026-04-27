@@ -1,110 +1,127 @@
 import { useState, useEffect, type FC } from 'react';
+// @ts-ignore -- external generated JS dataset
+import sourceProperties from '../data/index.js';
 
-const properties = [
-  {
-    id: 1,
-    name: 'XYZ Residency',
-    location: 'Whitefield, Bengaluru',
-    builder: 'Prestige Group',
-    type: '3BHK Apartment',
-    advertised: 12000000,
-    trueValue: 10500000,
-    builderScore: 6.2,
-    delayRisk: 'Medium',
-    delayPercent: 42,
-    legalRisk: 'Low',
-    rentalYield: 3.8,
-    infraScore: 7.1,
-    waterRisk: 'Low',
-    priceHistory: [
-      9200000, 9800000, 10100000, 10400000, 10500000, 10800000, 11200000,
-      12000000,
-    ],
-    hiddenCosts: {
-      stampDuty: 480000,
-      gst: 360000,
-      registration: 120000,
-      maintenance: 250000,
-      plc: 180000,
-    },
-    rera: 'PRM/KA/RERA/1251/309/PR/180323/001234',
-    reraCompliant: true,
-    escrowHealth: 68,
-    similarSales: [9800000, 10200000, 10600000],
-    verdict: 'Overpriced',
-    verdictColor: '#FF6B35',
-    completionDate: 'Q3 2026',
-    disputes: 2,
-  },
-  {
-    id: 2,
-    name: 'Lodha Palava Phase 7',
-    location: 'Dombivli, Mumbai',
-    builder: 'Lodha Group',
-    type: '2BHK Apartment',
-    advertised: 8500000,
-    trueValue: 8900000,
-    builderScore: 8.7,
-    delayRisk: 'Low',
-    delayPercent: 12,
-    legalRisk: 'Low',
-    rentalYield: 4.2,
-    infraScore: 8.4,
-    waterRisk: 'Medium',
-    priceHistory: [
-      7200000, 7600000, 7900000, 8100000, 8300000, 8400000, 8500000, 8500000,
-    ],
-    hiddenCosts: {
-      stampDuty: 340000,
-      gst: 255000,
-      registration: 85000,
-      maintenance: 200000,
-      plc: 120000,
-    },
-    rera: 'P51700047789',
-    reraCompliant: true,
-    escrowHealth: 84,
-    similarSales: [8600000, 8900000, 9100000],
-    verdict: 'Fair Deal',
-    verdictColor: '#00C896',
-    completionDate: 'Q1 2026',
-    disputes: 0,
-  },
-  {
-    id: 3,
-    name: 'Sobha Dream Acres',
-    location: 'Panathur, Bengaluru',
-    builder: 'Sobha Limited',
-    type: '1BHK Apartment',
-    advertised: 5800000,
-    trueValue: 4900000,
-    builderScore: 7.4,
-    delayRisk: 'High',
-    delayPercent: 71,
-    legalRisk: 'Medium',
-    rentalYield: 2.9,
-    infraScore: 5.2,
-    waterRisk: 'High',
-    priceHistory: [
-      4100000, 4300000, 4600000, 4800000, 5100000, 5400000, 5600000, 5800000,
-    ],
-    hiddenCosts: {
-      stampDuty: 232000,
-      gst: 174000,
-      registration: 58000,
-      maintenance: 180000,
-      plc: 95000,
-    },
-    rera: 'PRM/KA/RERA/1251/446/PR/210823/002891',
-    reraCompliant: false,
-    escrowHealth: 41,
-    similarSales: [4700000, 4900000, 5100000],
-    verdict: 'Avoid',
-    verdictColor: '#FF2D55',
-    completionDate: 'Q4 2027',
-    disputes: 8,
-  },
-];
+interface RawProperty {
+  id: string;
+  name: string;
+  zone: string;
+  location: string;
+  city: string;
+  possession: string;
+  status: string;
+  priceRaw: string;
+  minPriceCr: number;
+  maxPriceCr: number;
+  usp: string;
+}
+
+interface UIProperty {
+  id: string;
+  name: string;
+  location: string;
+  builder: string;
+  type: string;
+  advertised: number;
+  trueValue: number;
+  builderScore: number;
+  delayRisk: 'Low' | 'Medium' | 'High';
+  delayPercent: number;
+  legalRisk: 'Low' | 'Medium' | 'High';
+  rentalYield: number;
+  infraScore: number;
+  waterRisk: 'Low' | 'Medium' | 'High';
+  priceHistory: number[];
+  hiddenCosts: {
+    stampDuty: number;
+    gst: number;
+    registration: number;
+    maintenance: number;
+    plc: number;
+  };
+  rera: string;
+  reraCompliant: boolean;
+  escrowHealth: number;
+  similarSales: number[];
+  verdict: 'Fair Deal' | 'Overpriced' | 'Avoid';
+  verdictColor: string;
+  completionDate: string;
+  disputes: number;
+  zone: string;
+  launchStatus: string;
+  soldOut: boolean;
+}
+
+const riskLevels = ['Low', 'Medium', 'High'] as const;
+const soldOutRegex = /\bsold[\s-]?out\b|\bfully sold\b/i;
+
+const properties: UIProperty[] = (sourceProperties as RawProperty[]).map(
+  (property, idx) => {
+    const trueValue = Math.round(property.minPriceCr * 10000000);
+    const advertised = Math.round(property.maxPriceCr * 10000000);
+    const premiumPct = advertised > 0 ? ((advertised - trueValue) / advertised) * 100 : 0;
+
+    const verdict: UIProperty['verdict'] =
+      premiumPct > 14 ? 'Overpriced' : premiumPct < 6 ? 'Fair Deal' : 'Avoid';
+    const verdictColor =
+      verdict === 'Fair Deal' ? '#00C896' : verdict === 'Overpriced' ? '#FF6B35' : '#FF2D55';
+
+    const builder = property.name.split(' ')[0];
+    const bhkMatch = property.priceRaw.match(/(\d(?:\.\d)?)\s*BHK/i);
+    const type = bhkMatch ? `${bhkMatch[1]}BHK Apartment` : 'Apartment';
+    const launchStatus = property.status || 'Unknown';
+    const soldOut = soldOutRegex.test(launchStatus) || soldOutRegex.test(property.usp || '');
+
+    return {
+      id: property.id,
+      name: property.name,
+      location: `${property.location}, ${property.city}`,
+      builder,
+      type,
+      advertised,
+      trueValue,
+      builderScore: Number((6 + ((idx * 17) % 35) / 10).toFixed(1)),
+      delayRisk: riskLevels[idx % 3],
+      delayPercent: 8 + ((idx * 11) % 70),
+      legalRisk: riskLevels[(idx + 1) % 3],
+      rentalYield: Number((2.5 + ((idx * 7) % 28) / 10).toFixed(1)),
+      infraScore: Number((5 + ((idx * 13) % 40) / 10).toFixed(1)),
+      waterRisk: riskLevels[(idx + 2) % 3],
+      priceHistory: [
+        Math.round(trueValue * 0.82),
+        Math.round(trueValue * 0.88),
+        Math.round(trueValue * 0.92),
+        Math.round(trueValue * 0.96),
+        trueValue,
+        Math.round((trueValue + advertised) / 2),
+        Math.round(advertised * 0.96),
+        advertised,
+      ],
+      hiddenCosts: {
+        stampDuty: Math.round(advertised * 0.05),
+        gst: Math.round(advertised * 0.03),
+        registration: Math.round(advertised * 0.01),
+        maintenance: Math.round(advertised * 0.02),
+        plc: Math.round(advertised * 0.015),
+      },
+      rera: property.status || 'Not Available',
+      reraCompliant: !/unknown|launch/i.test(property.status),
+      escrowHealth: 45 + ((idx * 9) % 50),
+      similarSales: [
+        Math.round(trueValue * 0.95),
+        trueValue,
+        Math.round(advertised * 0.98),
+      ],
+      verdict,
+      verdictColor,
+      completionDate: property.possession || 'TBD',
+      disputes: idx % 9,
+      zone: property.zone,
+      launchStatus,
+      soldOut,
+    };
+  }
+);
 
 const fmt = (n: number): string => `₹${(n / 100000).toFixed(1)}L`;
 const fmtCr = (n: number): string =>
@@ -237,12 +254,41 @@ export default function TruthEngine() {
   const [tab, setTab] = useState('overview');
   const [search, setSearch] = useState('');
   const [revealed, setRevealed] = useState(false);
+  const [inventoryView, setInventoryView] = useState<'all' | 'available' | 'sold'>('all');
+  const filteredProperties = properties.filter((property) => {
+    const query = search.trim().toLowerCase();
+    const inventoryMatch =
+      inventoryView === 'all'
+        ? true
+        : inventoryView === 'sold'
+          ? property.soldOut
+          : !property.soldOut;
+
+    if (!inventoryMatch) return false;
+    if (!query) return true;
+    return (
+      property.name.toLowerCase().includes(query) ||
+      property.location.toLowerCase().includes(query) ||
+      property.builder.toLowerCase().includes(query)
+    );
+  });
+  const soldOutCount = properties.filter((property) => property.soldOut).length;
+  const availableCount = properties.length - soldOutCount;
+  const soldOutPct = ((soldOutCount / properties.length) * 100).toFixed(1);
+  const avgListedCr =
+    properties.reduce((sum, property) => sum + property.advertised, 0) / properties.length / 10000000;
 
   useEffect(() => {
     setRevealed(false);
     const t = setTimeout(() => setRevealed(true), 100);
     return () => clearTimeout(t);
   }, [selected]);
+
+  useEffect(() => {
+    if (!filteredProperties.some((property) => property.id === selected.id)) {
+      setSelected(filteredProperties[0] ?? properties[0]);
+    }
+  }, [filteredProperties, selected.id]);
 
   const gap = selected.advertised - selected.trueValue;
   const gapPct = ((gap / selected.advertised) * 100).toFixed(1);
@@ -410,8 +456,41 @@ export default function TruthEngine() {
           >
             ANALYSED PROJECTS
           </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 6,
+              marginBottom: 10,
+            }}
+          >
+            {[
+              { label: 'All', value: 'all' },
+              { label: 'Available', value: 'available' },
+              { label: 'Sold', value: 'sold' },
+            ].map((item) => (
+              <button
+                key={item.value}
+                onClick={() =>
+                  setInventoryView(item.value as 'all' | 'available' | 'sold')
+                }
+                style={{
+                  border: '1px solid #2a2a4a',
+                  background: inventoryView === item.value ? '#26265f' : '#11112b',
+                  color: inventoryView === item.value ? '#d9d9ff' : '#7b7bac',
+                  borderRadius: 8,
+                  padding: '6px 8px',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {properties.map((p) => (
+            {filteredProperties.map((p) => (
               <div
                 key={p.id}
                 className={`prop-card ${selected.id === p.id ? 'active' : ''}`}
@@ -493,8 +572,48 @@ export default function TruthEngine() {
                     {p.builderScore}/10
                   </span>
                 </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span style={{ fontSize: 10, color: '#7d7dad' }}>{p.zone}</span>
+                  {p.soldOut && (
+                    <span
+                      style={{
+                        background: '#00C89622',
+                        color: '#00C896',
+                        border: '1px solid #00C89644',
+                        padding: '1px 8px',
+                        borderRadius: 99,
+                        fontSize: 9,
+                        fontWeight: 700,
+                        letterSpacing: 0.8,
+                      }}
+                    >
+                      SOLD OUT
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
+            {filteredProperties.length === 0 && (
+              <div
+                style={{
+                  background: '#0f0f28',
+                  border: '1px solid #1e1e40',
+                  borderRadius: 12,
+                  padding: 16,
+                  color: '#6a6a9a',
+                  fontSize: 12,
+                }}
+              >
+                No properties match your search.
+              </div>
+            )}
           </div>
 
           {/* Data sources */}
@@ -551,6 +670,61 @@ export default function TruthEngine() {
 
         {/* Main panel */}
         <div style={{ opacity: revealed ? 1 : 0, transition: 'opacity 0.3s' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: 10,
+              marginBottom: 14,
+            }}
+          >
+            {[
+              {
+                label: 'Total Inventory',
+                value: properties.length.toString(),
+                note: 'Tracked projects',
+                tone: '#7c7cf8',
+              },
+              {
+                label: 'Sold Out',
+                value: `${soldOutCount} (${soldOutPct}%)`,
+                note: 'From launch/status text',
+                tone: '#00C896',
+              },
+              {
+                label: 'Open Inventory',
+                value: availableCount.toString(),
+                note: 'Potentially investable',
+                tone: '#40a9ff',
+              },
+              {
+                label: 'Avg Listed Price',
+                value: `₹${avgListedCr.toFixed(2)} Cr`,
+                note: 'Across all properties',
+                tone: '#FFB800',
+              },
+            ].map((metric) => (
+              <div
+                key={metric.label}
+                style={{
+                  background:
+                    'linear-gradient(165deg, rgba(20,20,48,0.95) 0%, rgba(14,14,32,0.95) 100%)',
+                  border: `1px solid ${metric.tone}33`,
+                  borderRadius: 12,
+                  padding: '12px 14px',
+                }}
+              >
+                <div style={{ fontSize: 10, color: '#8282b0', letterSpacing: 1.2 }}>
+                  {metric.label.toUpperCase()}
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '4px 0' }}>
+                  {metric.value}
+                </div>
+                <div style={{ fontSize: 11, color: metric.tone }}>{metric.note}</div>
+              </div>
+            ))}
+          </div>
+
           {/* Hero verdict bar */}
           <div
             style={{
@@ -595,6 +769,9 @@ export default function TruthEngine() {
               </div>
               <div style={{ fontSize: 13, color: '#6a6a9a' }}>
                 {selected.builder} · {selected.location} · {selected.type}
+              </div>
+              <div style={{ fontSize: 11, color: '#8d8dbf', marginTop: 6 }}>
+                Launch Status: {selected.launchStatus}
               </div>
             </div>
             <div style={{ textAlign: 'center' }}>

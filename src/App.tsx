@@ -258,21 +258,31 @@ const ScoreArc: FC<ScoreArcProps> = ({ score, max = 10, size = 80 }) => {
 };
 
 export default function TruthEngine() {
+  const pickRandomPropertyIds = (pool: UIProperty[], count = 3): string[] => {
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(count, shuffled.length)).map((property) => property.id);
+  };
+
+  const [featuredIds, setFeaturedIds] = useState<string[]>(() =>
+    pickRandomPropertyIds(properties, 3)
+  );
   const [selected, setSelected] = useState(properties[0]);
   const [tab, setTab] = useState('overview');
   const [search, setSearch] = useState('');
   const [revealed, setRevealed] = useState(false);
   const [inventoryView, setInventoryView] = useState<'all' | 'available' | 'sold'>('all');
-  const filteredProperties = properties.filter((property) => {
-    const query = search.trim().toLowerCase();
-    const inventoryMatch =
-      inventoryView === 'all'
-        ? true
-        : inventoryView === 'sold'
-          ? property.soldOut
-          : !property.soldOut;
-
-    if (!inventoryMatch) return false;
+  const inventoryFilteredProperties = properties.filter((property) => {
+    if (inventoryView === 'all') return true;
+    return inventoryView === 'sold' ? property.soldOut : !property.soldOut;
+  });
+  const featuredProperties = inventoryFilteredProperties.filter((property) =>
+    featuredIds.includes(property.id)
+  );
+  const remainingProperties = inventoryFilteredProperties.filter(
+    (property) => !featuredIds.includes(property.id)
+  );
+  const query = search.trim().toLowerCase();
+  const filteredProperties = remainingProperties.filter((property) => {
     if (!query) return true;
     return (
       property.name.toLowerCase().includes(query) ||
@@ -280,6 +290,7 @@ export default function TruthEngine() {
       property.builder.toLowerCase().includes(query)
     );
   });
+  const displayedProperties = query ? filteredProperties : featuredProperties;
   const soldOutCount = properties.filter((property) => property.soldOut).length;
   const availableCount = properties.length - soldOutCount;
   const soldOutPct = ((soldOutCount / properties.length) * 100).toFixed(1);
@@ -293,10 +304,18 @@ export default function TruthEngine() {
   }, [selected]);
 
   useEffect(() => {
-    if (!filteredProperties.some((property) => property.id === selected.id)) {
-      setSelected(filteredProperties[0] ?? properties[0]);
+    if (!displayedProperties.some((property) => property.id === selected.id)) {
+      setSelected(displayedProperties[0] ?? properties[0]);
     }
-  }, [filteredProperties, selected.id]);
+  }, [displayedProperties, selected.id]);
+
+  useEffect(() => {
+    if (query) return;
+    const timer = setInterval(() => {
+      setFeaturedIds(pickRandomPropertyIds(inventoryFilteredProperties, 3));
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [query, inventoryFilteredProperties]);
 
   const gap = selected.advertised - selected.trueValue;
   const gapPct = ((gap / selected.advertised) * 100).toFixed(1);
@@ -498,7 +517,7 @@ export default function TruthEngine() {
             ))}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {filteredProperties.map((p) => (
+            {displayedProperties.map((p) => (
               <div
                 key={p.id}
                 className={`prop-card ${selected.id === p.id ? 'active' : ''}`}
@@ -608,7 +627,7 @@ export default function TruthEngine() {
                 </div>
               </div>
             ))}
-            {filteredProperties.length === 0 && (
+            {displayedProperties.length === 0 && (
               <div
                 style={{
                   background: '#0f0f28',
@@ -619,7 +638,9 @@ export default function TruthEngine() {
                   fontSize: 12,
                 }}
               >
-                No properties match your search.
+                {query
+                  ? 'No remaining properties match your search.'
+                  : 'No featured properties available for this filter.'}
               </div>
             )}
           </div>

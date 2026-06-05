@@ -272,11 +272,6 @@ export default function TruthEngine() {
       property.builder.toLowerCase().includes(query)
     );
   });
-  const soldOutCount = properties.filter((property) => property.soldOut).length;
-  const availableCount = properties.length - soldOutCount;
-  const soldOutPct = ((soldOutCount / properties.length) * 100).toFixed(1);
-  const avgListedCr =
-    properties.reduce((sum, property) => sum + property.advertised, 0) / properties.length / 10000000;
 
   useEffect(() => {
     setRevealed(false);
@@ -670,61 +665,6 @@ export default function TruthEngine() {
 
         {/* Main panel */}
         <div style={{ opacity: revealed ? 1 : 0, transition: 'opacity 0.3s' }}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-              gap: 10,
-              marginBottom: 14,
-            }}
-          >
-            {[
-              {
-                label: 'Total Inventory',
-                value: properties.length.toString(),
-                note: 'Tracked projects',
-                tone: '#7c7cf8',
-              },
-              {
-                label: 'Sold Out',
-                value: `${soldOutCount} (${soldOutPct}%)`,
-                note: 'From launch/status text',
-                tone: '#00C896',
-              },
-              {
-                label: 'Open Inventory',
-                value: availableCount.toString(),
-                note: 'Potentially investable',
-                tone: '#40a9ff',
-              },
-              {
-                label: 'Avg Listed Price',
-                value: `₹${avgListedCr.toFixed(2)} Cr`,
-                note: 'Across all properties',
-                tone: '#FFB800',
-              },
-            ].map((metric) => (
-              <div
-                key={metric.label}
-                style={{
-                  background:
-                    'linear-gradient(165deg, rgba(20,20,48,0.95) 0%, rgba(14,14,32,0.95) 100%)',
-                  border: `1px solid ${metric.tone}33`,
-                  borderRadius: 12,
-                  padding: '12px 14px',
-                }}
-              >
-                <div style={{ fontSize: 10, color: '#8282b0', letterSpacing: 1.2 }}>
-                  {metric.label.toUpperCase()}
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '4px 0' }}>
-                  {metric.value}
-                </div>
-                <div style={{ fontSize: 11, color: metric.tone }}>{metric.note}</div>
-              </div>
-            ))}
-          </div>
-
           {/* Hero verdict bar */}
           <div
             style={{
